@@ -1,0 +1,83 @@
+/* ─── Calendar ───────────────────────────────────────────────────────────── */
+.calendar-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--clr-border-subtle);
+  background: var(--clr-surface-2);
+}
+.calendar-nav { display: flex; align-items: center; gap: var(--space-2); }
+.calendar-month { margin-left: var(--space-4); font-weight: 600; font-size: 1.1rem; }
+
+.calendar-grid {
+  display: flex;
+  overflow-x: auto;
+  background: var(--clr-surface-1);
+}
+.calendar-col {
+  flex: 1; min-width: 140px;
+  border-right: 1px solid var(--clr-border-subtle);
+}
+.calendar-col.header-col { flex: 0 0 80px; min-width: 80px; background: var(--clr-surface-2); }
+.calendar-col:last-child { border-right: none; }
+
+.calendar-cell {
+  height: 80px; /* 1 hour height */
+  border-bottom: 1px solid var(--clr-border-subtle);
+  display: flex; flex-direction: column;
+}
+.header-cell {
+  height: 60px;
+  align-items: center; justify-content: center;
+  background: var(--clr-surface-2);
+}
+
+.day-name { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--clr-text-muted); }
+.day-number {
+  font-size: 1.25rem; font-weight: 700;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+.day-number.active { background: var(--clr-primary-500); color: #fff; }
+
+.time-label {
+  font-size: 0.75rem; font-weight: 600; color: var(--clr-text-muted);
+  justify-content: flex-start; align-items: flex-end;
+  padding: 4px;
+}
+.header-cell.time-label { align-items: center; }
+
+/* Slots */
+.slot-container { position: relative; }
+.slot {
+  height: 50%; width: 100%;
+  border-bottom: 1px dashed var(--clr-border-subtle);
+  padding: 2px 4px;
+  display: flex; align-items: center;
+  transition: background var(--transition-fast);
+  cursor: pointer;
+  overflow: hidden;
+}
+.slot:hover:not(.booked) { background: rgba(255,255,255,.03); }
+.slot.bottom-half { border-bottom: none; }
+.slot-empty { font-size: 0.7rem; color: transparent; }
+.slot:hover:not(.booked) .slot-empty { color: var(--clr-text-muted); }
+
+.slot.booked {
+  background: rgba(33,154,128,.15);
+  border-left: 3px solid var(--clr-primary-500);
+  cursor: pointer;
+}
+.slot.booked:hover { filter: brightness(1.1); }
+.slot-content { display: flex; flex-direction: column; justify-content: center; height: 100%; min-width: 0; }
+.slot-patient { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.slot-status { font-size: 0.65rem; text-transform: uppercase; opacity: .8; white-space: nowrap; }
+
+/* Slot Status Colors */
+.slot.status-booked      { background: rgba(59,130,246,.15); border-left-color: #3b82f6; }
+.slot.status-checked_in  { background: rgba(139,92,246,.15); border-left-color: #8b5cf6; }
+.slot.status-in_progress { background: rgba(245,158,11,.15); border-left-color: #f59e0b; }
+.slot.status-completed   { background: rgba(34,197,94,.15);  border-left-color: #22c55e; }
+.slot.status-no_show     { background: rgba(239,68,68,.15);  border-left-color: #ef4444; }
+.slot.status-cancelled   { opacity: .5; background: rgba(107,114,128,.1); border-left-color: #6b7280; }

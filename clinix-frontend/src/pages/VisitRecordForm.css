@@ -1,0 +1,44 @@
+/* ─── Visit Record Form ────────────────────────────────────────────────────── */
+.visit-form-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.visit-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--space-6);
+}
+
+.visit-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.visit-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.vitals-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-4);
+}
+
+.disabled-section {
+  opacity: 0.7;
+  pointer-events: none;
+  background: var(--clr-surface-2);
+}
+.disabled-section .card-header {
+  pointer-events: auto; /* allow badge to be hovered/seen clearly */
+}
+
+@media (max-width: 900px) {
+  .visit-form-layout { flex-direction: column; }
+  .visit-sidebar { width: 100%; position: static; }
+}
