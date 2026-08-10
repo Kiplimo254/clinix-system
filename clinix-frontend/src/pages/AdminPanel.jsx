@@ -11,7 +11,7 @@ export default function AdminPanel() {
   
   const { data: staffList = [], isLoading: loadingStaff } = useQuery({
     queryKey: ['staff'],
-    queryFn: () => staffApi.list().then(r => r.data),
+    queryFn: () => staffApi.list().then(r => r.data.results || r.data),
   });
 
   const { data: auditLogs = [], isLoading: loadingAudit } = useQuery({
