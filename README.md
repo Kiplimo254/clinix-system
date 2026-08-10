@@ -13,3 +13,7 @@ A comprehensive, multi-tenant Clinic Management System built with Django and Rea
 ## Tech Stack
 - **Backend**: Django, Django REST Framework, SQLite (Development) / PostgreSQL (Production), Celery, Redis.
 - **Frontend**: React, Vite, React Router, TanStack Query, Axios, standard CSS modules with modern UI.
+
+## FOR FULL SYSTEM MESSAGE ME DIRECTLY
+
+## TESTING LINKS COMING SOON...
