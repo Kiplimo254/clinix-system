@@ -7,6 +7,7 @@ export default function DiagnosisAccessModal({ patientId, patientName, onClose, 
   const [reason, setReason] = useState('');
   const [requestId, setRequestId] = useState(null);
   
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,12 +36,13 @@ export default function DiagnosisAccessModal({ patientId, patientName, onClose, 
     setError('');
     try {
       await diagnosisAccessApi.approve(requestId, {
+        email,
         password,
         expiry_minutes: 15,
       });
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Approval failed. Incorrect PIN/Password?');
+      setError(err.response?.data?.detail || 'Approval failed. Incorrect Email or PIN/Password?');
     } finally {
       setLoading(false);
     }
@@ -89,10 +91,21 @@ export default function DiagnosisAccessModal({ patientId, patientName, onClose, 
               </div>
               <h3>Doctor Approval Required</h3>
               <p style={{ fontSize: '.9rem', marginTop: 8 }}>
-                Please hand the device to the on-duty doctor or admin to approve this request with their password. Access will be granted for 15 minutes.
+                Please hand the device to the on-duty doctor or admin to approve this request with their credentials. Access will be granted for 15 minutes.
               </p>
             </div>
             
+            <div className="form-group">
+              <label className="form-label">Doctor's Email</label>
+              <input 
+                type="email" 
+                className="form-control" 
+                placeholder="dr.smith@clinic.com" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+              />
+            </div>
             <div className="form-group">
               <label className="form-label">Doctor's Password</label>
               <input 

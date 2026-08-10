@@ -117,6 +117,8 @@ export const appointmentApi = {
   get: (id) => api.get(`/appointments/${id}/`),
   update: (id, data) => api.patch(`/appointments/${id}/`, data),
   checkIn: (id) => api.post(`/appointments/${id}/check_in/`),
+  startTriage: (id) => api.post(`/appointments/${id}/start_triage/`),
+  sendToDoctor: (id) => api.post(`/appointments/${id}/send_to_doctor/`),
   markNoShow: (id) => api.post(`/appointments/${id}/mark_no_show/`),
   cancel: (id) => api.post(`/appointments/${id}/cancel/`),
 };
@@ -134,6 +136,7 @@ export const visitApi = {
 // ─── Payments ─────────────────────────────────────────────────────────────
 export const paymentApi = {
   create: (data) => api.post('/payments/', data),
+  list: (params) => api.get('/payments/', { params }),
 };
 
 // ─── Diagnosis Access ─────────────────────────────────────────────────────
@@ -141,6 +144,7 @@ export const diagnosisAccessApi = {
   request: (data) => api.post('/diagnosis-access-requests/', data),
   approve: (id, data) =>
     api.post(`/diagnosis-access-requests/${id}/approve/`, data),
+  revoke: (id) => api.post(`/diagnosis-access-requests/${id}/revoke/`),
   list: (params) => api.get('/diagnosis-access-requests/', { params }),
 };
 

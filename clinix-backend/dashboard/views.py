@@ -26,14 +26,15 @@ def today_dashboard(request):
     total = todays_appointments.count()
     booked = todays_appointments.filter(status="booked").count()
     checked_in = todays_appointments.filter(status="checked_in").count()
-    in_progress = todays_appointments.filter(status="in_progress").count()
+    with_nurse = todays_appointments.filter(status="with_nurse").count()
+    with_doctor = todays_appointments.filter(status="with_doctor").count()
     completed = todays_appointments.filter(status="completed").count()
     no_show = todays_appointments.filter(status="no_show").count()
     cancelled = todays_appointments.filter(status="cancelled").count()
 
     # Upcoming (next 3) booked appointments
     upcoming = todays_appointments.filter(
-        status__in=["booked", "checked_in"],
+        status__in=["booked", "checked_in", "with_nurse", "with_doctor"],
         scheduled_time__gte=timezone.now(),
     ).order_by("scheduled_time")[:5]
 
@@ -53,7 +54,8 @@ def today_dashboard(request):
             "total": total,
             "booked": booked,
             "checked_in": checked_in,
-            "in_progress": in_progress,
+            "with_nurse": with_nurse,
+            "with_doctor": with_doctor,
             "completed": completed,
             "no_show": no_show,
             "cancelled": cancelled,

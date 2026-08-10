@@ -65,6 +65,7 @@ export default function Patients() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Phone</th>
                   <th>Age / Sex</th>
@@ -75,6 +76,11 @@ export default function Patients() {
               <tbody>
                 {patients.map((p) => (
                   <tr key={p.id}>
+                    <td>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '.8rem', background: 'var(--clr-surface-2)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--clr-primary-400)', fontWeight: 700, letterSpacing: '.03em' }}>
+                        {p.patient_id || `PAT-${String(p.id).padStart(5,'0')}`}
+                      </span>
+                    </td>
                     <td style={{ fontWeight: 600 }}>{p.full_name}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

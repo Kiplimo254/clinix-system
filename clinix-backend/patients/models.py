@@ -12,6 +12,7 @@ class Patient(models.Model):
     ]
 
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name="patients")
+    patient_id = models.CharField(max_length=20, unique=True, blank=True, db_index=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=20, db_index=True)
@@ -28,8 +29,15 @@ class Patient(models.Model):
     class Meta:
         ordering = ["last_name", "first_name"]
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Auto-generate patient_id after first save (pk is available)
+        if not self.patient_id:
+            self.patient_id = f"PAT-{self.pk:05d}"
+            Patient.objects.filter(pk=self.pk).update(patient_id=self.patient_id)
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.phone})"
+        return f"{self.patient_id} — {self.first_name} {self.last_name} ({self.phone})"
 
     @property
     def full_name(self):

@@ -65,9 +65,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, CanRecordPayment]
 
     def get_queryset(self):
-        return self.queryset.filter(
+        qs = self.queryset.filter(
             visit__appointment__clinic=self.request.user.staff.clinic
         )
+        visit_id = self.request.query_params.get("visit")
+        if visit_id:
+            qs = qs.filter(visit_id=visit_id)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(recorded_by=self.request.user.staff)
@@ -92,7 +96,7 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user.staff)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsAdminOrDoctor])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsClinicStaff])
     def approve(self, request, pk=None):
         """POST /api/diagnosis-access-requests/<id>/approve/"""
         access_request = self.get_object()
@@ -106,11 +110,30 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
         serializer = DiagnosisAccessApproveSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Verify the approving doctor's password
-        approving_staff = request.user.staff
-        if not request.user.check_password(serializer.validated_data["password"]):
+        from django.contrib.auth import authenticate
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+        
+        # Authenticate the doctor
+        approving_user = authenticate(username=email, password=password)
+        if not approving_user or not hasattr(approving_user, "staff"):
             return Response(
-                {"detail": "Incorrect password. Access not granted."},
+                {"detail": "Invalid doctor credentials."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+            
+        approving_staff = approving_user.staff
+        
+        # Verify it's a doctor or admin from the same clinic
+        if approving_staff.clinic != request.user.staff.clinic:
+            return Response(
+                {"detail": "Staff member belongs to a different clinic."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+            
+        if approving_staff.role not in ["doctor", "admin"]:
+            return Response(
+                {"detail": "Only doctors or admins can approve diagnosis access."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -119,6 +142,31 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
             expiry_minutes=serializer.validated_data["expiry_minutes"],
         )
 
+        return Response(
+            DiagnosisAccessRequestSerializer(access_request).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsClinicStaff])
+    def revoke(self, request, pk=None):
+        """POST /api/diagnosis-access-requests/<id>/revoke/"""
+        if request.user.staff.role != "admin":
+            return Response(
+                {"detail": "Only admins can revoke access."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+            
+        access_request = self.get_object()
+        if access_request.status != "approved":
+            return Response(
+                {"detail": "Only approved requests can be revoked."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        access_request.status = "expired"
+        access_request.expires_at = timezone.now()
+        access_request.save()
+        
         return Response(
             DiagnosisAccessRequestSerializer(access_request).data,
             status=status.HTTP_200_OK,

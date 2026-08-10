@@ -15,7 +15,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "id", "clinic", "patient", "patient_detail",
             "doctor", "doctor_detail",
             "scheduled_time", "duration_minutes", "reason",
-            "status", "reminder_sent", "checked_in_at",
+            "status", "is_walk_in", "reminder_sent", "checked_in_at",
             "created_by", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "clinic", "reminder_sent", "checked_in_at", "created_by", "created_at", "updated_at"]
@@ -29,12 +29,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if not doctor or not scheduled_time:
             return data
 
+        # Walk-ins bypass double-booking validation
+        if data.get("is_walk_in"):
+            return data
+
         from datetime import timedelta
         end_time = scheduled_time + timedelta(minutes=duration)
 
         qs = Appointment.objects.filter(
             doctor=doctor,
-            status__in=["booked", "checked_in", "in_progress"],
+            status="booked",
             scheduled_time__lt=end_time,
             scheduled_time__gte=scheduled_time - timedelta(minutes=duration),
         )
@@ -61,5 +65,5 @@ class AppointmentListSerializer(serializers.ModelSerializer):
             "id", "patient", "patient_name", "patient_phone",
             "doctor", "doctor_name",
             "scheduled_time", "duration_minutes", "reason",
-            "status", "reminder_sent", "checked_in_at",
+            "status", "is_walk_in", "reminder_sent", "checked_in_at",
         ]

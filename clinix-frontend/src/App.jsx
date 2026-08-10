@@ -9,6 +9,7 @@ import ClinicSignup from './pages/ClinicSignup';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientDetail from './pages/PatientDetail';
+import RegisterPatient from './pages/RegisterPatient';
 import Appointments from './pages/Appointments';
 import BookAppointment from './pages/BookAppointment';
 import DoctorCalendar from './pages/DoctorCalendar';
@@ -50,6 +51,7 @@ export default function App() {
             <Route element={<RoleGuard><AppLayout /></RoleGuard>}>
               <Route index element={<Dashboard />} />
               <Route path="patients"           element={<Patients />} />
+              <Route path="patients/new"       element={<RegisterPatient />} />
               <Route path="patients/:id"       element={<PatientDetail />} />
               <Route path="appointments"       element={<Appointments />} />
               <Route path="appointments/book"  element={<BookAppointment />} />

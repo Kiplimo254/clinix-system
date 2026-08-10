@@ -10,7 +10,8 @@ class Appointment(models.Model):
     STATUS_CHOICES = [
         ("booked", "Booked"),
         ("checked_in", "Checked In"),
-        ("in_progress", "In Progress"),
+        ("with_nurse", "With Nurse"),
+        ("with_doctor", "With Doctor"),
         ("completed", "Completed"),
         ("no_show", "No Show"),
         ("cancelled", "Cancelled"),
@@ -28,8 +29,19 @@ class Appointment(models.Model):
     duration_minutes = models.PositiveIntegerField(default=30)
     reason = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="booked")
+    is_walk_in = models.BooleanField(default=False)
     reminder_sent = models.BooleanField(default=False)
     checked_in_at = models.DateTimeField(null=True, blank=True)
+    triage_nurse = models.ForeignKey(
+        Staff,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="triaged_appointments",
+        limit_choices_to={"role": "nurse"},
+    )
+    triage_started_at = models.DateTimeField(null=True, blank=True)
+    seen_by_doctor_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         Staff,
         on_delete=models.SET_NULL,

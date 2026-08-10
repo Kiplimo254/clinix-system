@@ -9,7 +9,7 @@ import {
 import './Dashboard.css';
 
 const STATUS_LABELS = {
-  booked: 'Booked', checked_in: 'Checked In', in_progress: 'In Progress',
+  booked: 'Booked', checked_in: 'Checked In', with_nurse: 'With Nurse', with_doctor: 'With Doctor',
   completed: 'Completed', no_show: 'No Show', cancelled: 'Cancelled',
 };
 
@@ -65,11 +65,11 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-grid">
-        {/* Upcoming appointments */}
+        {/* Live Queue */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Upcoming Appointments</span>
-            <span className="badge badge-booked">{upcoming.length} next</span>
+            <span className="card-title">Live Queue</span>
+            <span className="badge badge-booked">{upcoming.length} active</span>
           </div>
           {upcoming.length === 0 ? (
             <div className="empty-state" style={{ padding: '2rem' }}>

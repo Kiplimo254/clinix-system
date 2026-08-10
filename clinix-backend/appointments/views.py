@@ -58,10 +58,14 @@ class AppointmentViewSet(ClinicScopedMixin, viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(
-            clinic=self.get_clinic(),
-            created_by=self.request.user.staff,
-        )
+        kwargs = {
+            "clinic": self.get_clinic(),
+            "created_by": self.request.user.staff,
+        }
+        if serializer.validated_data.get("is_walk_in"):
+            kwargs["status"] = "checked_in"
+            kwargs["checked_in_at"] = timezone.now()
+        serializer.save(**kwargs)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, CanCheckIn])
     def check_in(self, request, pk=None):
@@ -74,6 +78,36 @@ class AppointmentViewSet(ClinicScopedMixin, viewsets.ModelViewSet):
             )
         appointment.status = "checked_in"
         appointment.checked_in_at = timezone.now()
+        appointment.save()
+        serializer = AppointmentSerializer(appointment, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsClinicStaff])
+    def start_triage(self, request, pk=None):
+        """POST /api/appointments/<id>/start_triage/"""
+        appointment = self.get_object()
+        if appointment.status != "checked_in":
+            return Response(
+                {"detail": "Patient must be checked in first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        appointment.status = "with_nurse"
+        appointment.triage_nurse = request.user.staff
+        appointment.triage_started_at = timezone.now()
+        appointment.save()
+        serializer = AppointmentSerializer(appointment, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsClinicStaff])
+    def send_to_doctor(self, request, pk=None):
+        """POST /api/appointments/<id>/send_to_doctor/"""
+        appointment = self.get_object()
+        if appointment.status not in ["checked_in", "with_nurse"]:
+            return Response(
+                {"detail": "Invalid status for sending to doctor."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        appointment.status = "with_doctor"
         appointment.save()
         serializer = AppointmentSerializer(appointment, context={"request": request})
         return Response(serializer.data)

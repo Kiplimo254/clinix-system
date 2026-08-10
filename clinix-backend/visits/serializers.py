@@ -23,7 +23,8 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         model = VisitRecord
         fields = [
             "id", "appointment", "appointment_detail",
-            "vitals", "triage_notes", "diagnosis", "prescription", "notes",
+            "triage_priority", "vitals", "triage_notes", "diagnosis", "prescription", "notes",
+            "follow_up_date",
             "created_by", "created_by_name", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_by", "created_at", "updated_at"]
@@ -70,6 +71,8 @@ class DiagnosisAccessRequestSerializer(serializers.ModelSerializer):
 
 
 class DiagnosisAccessApproveSerializer(serializers.Serializer):
-    """Doctor approves a request using their password/PIN."""
+    """Doctor approves a request using their email and password/PIN."""
+    email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True)
     expiry_minutes = serializers.IntegerField(default=15, min_value=5, max_value=60)
+

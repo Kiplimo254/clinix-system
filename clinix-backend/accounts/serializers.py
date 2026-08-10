@@ -16,8 +16,8 @@ class StaffSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Staff
-        fields = ["id", "user", "full_name", "email", "role", "specialty", "phone", "is_active", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "staff_id", "user", "full_name", "email", "role", "specialty", "phone", "is_active", "created_at"]
+        read_only_fields = ["id", "staff_id", "created_at"]
 
     def get_full_name(self, obj):
         return obj.user.get_full_name()
@@ -71,7 +71,7 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Staff
-        fields = ["id", "full_name", "email", "role", "specialty", "phone", "clinic_name", "clinic_id"]
+        fields = ["id", "staff_id", "full_name", "email", "role", "specialty", "phone", "clinic_name", "clinic_id"]
 
     def get_full_name(self, obj):
         return obj.user.get_full_name()

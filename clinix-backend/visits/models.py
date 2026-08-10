@@ -8,9 +8,16 @@ from accounts.models import Staff
 class VisitRecord(models.Model):
     """Clinical notes recorded by the doctor/nurse during a visit."""
 
+    PRIORITY_CHOICES = [
+        ("routine", "Routine"),
+        ("urgent", "Urgent"),
+        ("emergency", "Emergency"),
+    ]
+
     appointment = models.OneToOneField(
         Appointment, on_delete=models.CASCADE, related_name="visit_record"
     )
+    triage_priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="routine")
     vitals = models.JSONField(
         default=dict,
         blank=True,
@@ -22,12 +29,48 @@ class VisitRecord(models.Model):
     diagnosis = models.TextField(blank=True)           # doctor records
     prescription = models.TextField(blank=True)        # doctor records
     notes = models.TextField(blank=True)               # general notes
+    follow_up_date = models.DateField(null=True, blank=True)
     created_by = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Visit: {self.appointment}"
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from datetime import datetime, time
+from django.utils import timezone
+
+@receiver(post_save, sender=VisitRecord)
+def auto_book_follow_up(sender, instance, created, **kwargs):
+    """Auto-create a booked appointment if a follow_up_date is set."""
+    if not instance.follow_up_date:
+        return
+
+    # Check if a follow-up appointment already exists for this date and patient and doctor
+    start_of_day = timezone.make_aware(datetime.combine(instance.follow_up_date, time.min))
+    end_of_day = timezone.make_aware(datetime.combine(instance.follow_up_date, time.max))
+    
+    exists = Appointment.objects.filter(
+        patient=instance.appointment.patient,
+        doctor=instance.appointment.doctor,
+        scheduled_time__range=(start_of_day, end_of_day)
+    ).exists()
+
+    if not exists:
+        # Default to 9:00 AM for follow-ups, receptionist can reschedule later
+        scheduled_time = timezone.make_aware(datetime.combine(instance.follow_up_date, time(9, 0)))
+        Appointment.objects.create(
+            clinic=instance.appointment.clinic,
+            patient=instance.appointment.patient,
+            doctor=instance.appointment.doctor,
+            scheduled_time=scheduled_time,
+            duration_minutes=30,
+            reason="Follow-up visit",
+            status="booked",
+            created_by=instance.created_by,
+        )
 
 
 class Payment(models.Model):

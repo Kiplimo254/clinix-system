@@ -47,7 +47,9 @@ export default function PatientDetail() {
         <div className="patient-header-info">
           <h1>{patient.full_name}</h1>
           <div className="patient-meta">
-            <span className="badge badge-booked">ID: {patient.id}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '.85rem', background: 'rgba(33,154,128,.12)', color: 'var(--clr-primary-400)', padding: '3px 10px', borderRadius: 'var(--radius-full)', fontWeight: 700, border: '1px solid rgba(33,154,128,.25)' }}>
+              {patient.patient_id || `PAT-${String(patient.id).padStart(5,'0')}`}
+            </span>
             <span>Registered: {format(new Date(patient.created_at), 'MMM d, yyyy')}</span>
           </div>
         </div>
