@@ -33,7 +33,7 @@ export default function DoctorCalendar() {
 
   const { data: doctors = [] } = useQuery({
     queryKey: ['doctors'],
-    queryFn: () => staffApi.list({ role: 'doctor' }).then(r => r.data),
+    queryFn: () => staffApi.list({ role: 'doctor' }).then(r => r.data.results || r.data),
   });
 
   const startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
