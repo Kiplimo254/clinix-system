@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { appointmentApi, visitApi, paymentApi } from '../api/client';
+import { appointmentApi, visitApi, paymentApi, inventoryApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Save, ArrowLeft, CheckCircle2, Activity, ClipboardEdit, Stethoscope, Hash, User, Phone, CreditCard, Calendar } from 'lucide-react';
+import { Save, ArrowLeft, CheckCircle2, Activity, ClipboardEdit, Stethoscope, Hash, User, Phone, CreditCard, Calendar, Pill } from 'lucide-react';
 import { format } from 'date-fns';
 import './VisitRecordForm.css';
 import PaymentModal from '../components/PaymentModal';
@@ -329,6 +329,11 @@ export default function VisitRecordForm() {
             </div>
           </div>
 
+          {/* Dispense Medication — Nurse / Receptionist */}
+          {(isNurse || isReceptionist || isAdmin) && (
+            <DispenseMedicationCard visitId={existingRecordId} />
+          )}
+
           {/* General Notes */}
           <div className="card">
             <div className="card-header">
@@ -356,6 +361,92 @@ export default function VisitRecordForm() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function DispenseMedicationCard({ visitId }) {
+  const queryClient = useQueryClient();
+  const [item, setItem] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [dispensing, setDispensing] = useState(false);
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ['inventory'],
+    queryFn: () => inventoryApi.list().then(r => r.data.results || r.data),
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['inventory-transactions', visitId],
+    queryFn: () => inventoryApi.transactions({ visit_id: visitId }).then(r => r.data.results || r.data),
+    enabled: !!visitId,
+  });
+
+  const handleDispense = async (e) => {
+    e.preventDefault();
+    if (!visitId) {
+      alert("Please save the visit record as a draft first before dispensing.");
+      return;
+    }
+    setDispensing(true);
+    try {
+      await inventoryApi.dispense(item, quantity, visitId);
+      setItem('');
+      setQuantity(1);
+      queryClient.invalidateQueries(['inventory']);
+      queryClient.invalidateQueries(['inventory-transactions', visitId]);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to dispense.');
+    } finally {
+      setDispensing(false);
+    }
+  };
+
+  const visitTransactions = transactions.filter(t => t.visit_id === visitId && t.reason === 'dispensed');
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">
+          <Pill size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: '-3px' }} />
+          Dispense Medication
+        </span>
+      </div>
+      
+      {visitTransactions.length > 0 && (
+        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: 'var(--clr-surface-2)', borderRadius: 'var(--radius-md)' }}>
+          <h4 style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: 'var(--clr-text-secondary)' }}>Dispensed in this visit:</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
+            {visitTransactions.map(t => (
+              <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span>{t.item_name}</span>
+                <span style={{ fontWeight: 600, color: 'var(--clr-error)' }}>{t.change}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <form onSubmit={handleDispense} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+        <div className="form-group" style={{ flex: 1, margin: 0 }}>
+          <label className="form-label" style={{ fontSize: '0.75rem' }}>Item</label>
+          <select className="form-control form-control-sm" value={item} onChange={e => setItem(e.target.value)} required>
+            <option value="">Select item...</option>
+            {inventory.map(inv => (
+              <option key={inv.id} value={inv.id} disabled={inv.quantity_on_hand <= 0}>
+                {inv.name} (Stock: {inv.quantity_on_hand})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group" style={{ width: '80px', margin: 0 }}>
+          <label className="form-label" style={{ fontSize: '0.75rem' }}>Qty</label>
+          <input type="number" className="form-control form-control-sm" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} required />
+        </div>
+        <button type="submit" className="btn btn-primary btn-sm" disabled={dispensing || !item}>
+          Dispense
+        </button>
+      </form>
     </div>
   );
 }

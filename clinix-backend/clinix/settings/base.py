@@ -140,6 +140,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.tasks.send_appointment_reminders",
         "schedule": 1800,  # every 30 minutes
     },
+    "flag-shift-no-shows": {
+        "task": "staffing.tasks.flag_shift_no_shows",
+        "schedule": 1800,  # every 30 minutes
+    },
 }
 
 # ─── Africa's Talking ────────────────────────────────────────────────────────

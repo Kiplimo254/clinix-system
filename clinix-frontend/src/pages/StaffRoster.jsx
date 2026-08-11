@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { shiftApi, staffApi } from '../api/client';
+import { shiftApi, staffApi, leaveApi } from '../api/client';
 
 export default function StaffRoster() {
   const { isAdmin, user } = useAuth();
   const [shifts, setShifts] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -19,11 +20,13 @@ export default function StaffRoster() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [shiftsRes, staffRes] = await Promise.all([
+      const [shiftsRes, leavesRes, staffRes] = await Promise.all([
         shiftApi.list(),
+        leaveApi.list(),
         isAdmin ? staffApi.list() : Promise.resolve({ data: [] })
       ]);
       setShifts(shiftsRes.data.results || shiftsRes.data);
+      setLeaves(leavesRes.data.results || leavesRes.data);
       if (isAdmin) setStaffList(staffRes.data.results || staffRes.data);
     } catch (err) {
       console.error(err);
@@ -65,6 +68,15 @@ export default function StaffRoster() {
   const handleCheckOut = async (id) => {
     try {
       await shiftApi.checkOut(id);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApproveLeave = async (id) => {
+    try {
+      await leaveApi.approve(id);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -154,6 +166,46 @@ export default function StaffRoster() {
             </table>
           </div>
         )}
+      </div>
+
+      <div className="card mt-4">
+        <div className="card-header"><span className="card-title">Leave Requests</span></div>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Dates</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaves.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center' }}>No leave requests found.</td></tr>
+              ) : leaves.map(leave => (
+                <tr key={leave.id}>
+                  <td>{leave.staff_name}</td>
+                  <td>{leave.start_date} to {leave.end_date}</td>
+                  <td>{leave.reason || '—'}</td>
+                  <td>
+                    <span className={`badge ${leave.approved_by ? 'badge-success' : 'badge-warning'}`}>
+                      {leave.approved_by ? 'Approved' : 'Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    {isAdmin && !leave.approved_by && (
+                      <button className="btn btn-primary btn-sm" onClick={() => handleApproveLeave(leave.id)}>
+                        Approve
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

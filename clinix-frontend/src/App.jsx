@@ -18,6 +18,9 @@ import VisitRecordForm from './pages/VisitRecordForm';
 import AdminPanel from './pages/AdminPanel';
 import StaffRoster from './pages/StaffRoster';
 import InventoryList from './pages/InventoryList';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import './index.css';
 
@@ -46,8 +49,11 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             {/* Public */}
-            <Route path="/login"  element={<Login />} />
-            <Route path="/signup" element={<ClinicSignup />} />
+            <Route path="/login"          element={<Login />} />
+            <Route path="/signup"         element={<ClinicSignup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password"  element={<ResetPassword />} />
+            <Route path="/privacy"         element={<PrivacyPolicy />} />
 
             {/* Protected — any staff */}
             <Route element={<RoleGuard><AppLayout /></RoleGuard>}>

@@ -10,6 +10,7 @@ from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.contrib.auth import authenticate
 
 from .models import Staff
+from .audit_models import AuditLog
 from .serializers import MeSerializer
 from .permissions import IsClinicStaff, IsActiveStaff
 from .cookies import set_auth_cookies, clear_auth_cookies
@@ -19,6 +20,12 @@ from .login_lockout import (
     record_failed_attempt,
     clear_failed_attempts,
 )
+
+def _get_client_ip(request):
+    x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded:
+        return x_forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -46,6 +53,11 @@ class LoginView(APIView):
         if is_locked(email):
             remaining = get_lockout_remaining(email)
             minutes = max(1, remaining // 60)
+            AuditLog.objects.create(
+                action="login_locked", target_email=email,
+                detail=f"Locked out — {minutes}m remaining",
+                ip_address=_get_client_ip(request),
+            )
             return Response(
                 {"detail": f"Account temporarily locked. Try again in {minutes} minute(s)."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -54,6 +66,11 @@ class LoginView(APIView):
         user = authenticate(username=email, password=password)
         if user is None:
             remaining = record_failed_attempt(email)
+            AuditLog.objects.create(
+                action="login_failed", target_email=email,
+                detail=f"{remaining} attempt(s) remaining",
+                ip_address=_get_client_ip(request),
+            )
             if remaining == 0:
                 return Response(
                     {"detail": "Too many failed attempts. Account locked for 15 minutes."},
@@ -65,6 +82,11 @@ class LoginView(APIView):
             )
 
         if not user.is_active:
+            AuditLog.objects.create(
+                action="login_failed", target_email=email,
+                detail="Account is deactivated",
+                ip_address=_get_client_ip(request),
+            )
             return Response(
                 {"detail": "Your account is deactivated. Please visit the admin."},
                 status=status.HTTP_403_FORBIDDEN,
@@ -79,12 +101,21 @@ class LoginView(APIView):
             )
 
         if not staff.is_active:
+            AuditLog.objects.create(
+                action="login_failed", target_email=email,
+                detail="Staff profile is deactivated",
+                ip_address=_get_client_ip(request),
+            )
             return Response(
                 {"detail": "Your account is deactivated. Please visit the admin."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         clear_failed_attempts(email)
+        AuditLog.objects.create(
+            actor=user, action="login_success", target_email=email,
+            ip_address=_get_client_ip(request),
+        )
 
         refresh = RefreshToken.for_user(user)
         access = str(refresh.access_token)
@@ -153,6 +184,13 @@ def logout_view(request):
             token.blacklist()
         except Exception:
             pass
+
+    if request.user and request.user.is_authenticated:
+        AuditLog.objects.create(
+            actor=request.user, action="logout",
+            target_email=request.user.email,
+            ip_address=_get_client_ip(request),
+        )
 
     response = Response({"detail": "Logged out successfully."})
     clear_auth_cookies(response)

@@ -69,6 +69,9 @@ export const authApi = {
   refresh: (refresh) => api.post('/auth/refresh/', { refresh }),
   me: () => api.get('/auth/me/'),
   logout: (refresh) => api.post('/auth/logout/', { refresh }),
+  requestPasswordReset: (email) => api.post('/auth/password-reset/', { email }),
+  confirmPasswordReset: (data) => api.post('/auth/password-reset/confirm/', data),
+  auditLogs: () => api.get('/auth/audit-logs/'),
 };
 
 // ─── Clinic Signup ────────────────────────────────────────────────────────
@@ -94,6 +97,8 @@ export const patientApi = {
   create: (data) => api.post('/patients/', data),
   get: (id) => api.get(`/patients/${id}/`),
   update: (id, data) => api.patch(`/patients/${id}/`, data),
+  export: (id) => api.get(`/patients/${id}/export/`, { responseType: 'blob' }),
+  anonymise: (id) => api.post(`/patients/${id}/anonymise/`),
 };
 
 // ─── Appointments ─────────────────────────────────────────────────────────
@@ -145,6 +150,7 @@ export const shiftApi = {
   create: (data) => api.post('/shifts/', data),
   checkIn: (id) => api.post(`/shifts/${id}/check_in/`),
   checkOut: (id) => api.post(`/shifts/${id}/check_out/`),
+  availableDates: (staffId) => api.get('/shifts/available_dates/', { params: { staff: staffId } }),
 };
 
 export const leaveApi = {

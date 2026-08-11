@@ -11,6 +11,22 @@ class ShiftViewSet(ClinicScopedMixin, viewsets.ModelViewSet):
     permission_classes = [IsClinicStaff]
     queryset = Shift.objects.all()
 
+    @action(detail=False, methods=['get'])
+    def available_dates(self, request):
+        """
+        GET /api/shifts/available_dates/?staff=<id>
+        Returns shift dates where the given staff member has a scheduled/checked-in shift.
+        Used by the calendar to grey-out unavailable dates.
+        """
+        staff_id = request.query_params.get('staff')
+        if not staff_id:
+            return Response({'detail': 'staff param required.'}, status=400)
+        shifts = self.get_queryset().filter(
+            staff_id=staff_id,
+            status__in=['scheduled', 'checked_in'],
+        ).values_list('shift_date', flat=True)
+        return Response({'available_dates': list(shifts)})
+
     @action(detail=True, methods=['post'])
     def check_in(self, request, pk=None):
         shift = self.get_object()

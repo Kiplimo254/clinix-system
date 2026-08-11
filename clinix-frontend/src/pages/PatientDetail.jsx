@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import {
   User, Phone, Mail, MapPin, CalendarDays, Hash, FileText,
-  Activity, ClipboardList, ShieldAlert, ArrowLeft
+  Activity, ClipboardList, ShieldAlert, ArrowLeft, Download, Trash2
 } from 'lucide-react';
 import DiagnosisAccessModal from '../components/DiagnosisAccessModal';
 import './PatientDetail.css';
@@ -18,6 +18,36 @@ export default function PatientDetail() {
   
   const [accessModalOpen, setAccessModalOpen] = useState(false);
   const [hasFullAccess, setHasFullAccess] = useState(isDoctor || isAdmin);
+  const [anonymising, setAnonymising] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      const res = await patientApi.export(id);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `patient_${patient?.patient_id}_export.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Export failed.');
+    }
+  };
+
+  const handleAnonymise = async () => {
+    if (!window.confirm(`WARNING: This will permanently remove all PII for ${patient?.full_name}. Clinical records are preserved. Continue?`)) return;
+    setAnonymising(true);
+    try {
+      await patientApi.anonymise(id);
+      alert('Patient anonymised successfully.');
+      navigate('/patients');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Anonymisation failed.');
+    } finally {
+      setAnonymising(false);
+    }
+  };
 
   const { data: patient, isLoading: loadingPatient } = useQuery({
     queryKey: ['patient', id],
@@ -57,6 +87,16 @@ export default function PatientDetail() {
           <button className="btn btn-primary" onClick={() => navigate(`/appointments/book?patient=${patient.id}`)}>
             <CalendarDays size={16} /> Book Appointment
           </button>
+          {isAdmin && (
+            <>
+              <button className="btn btn-ghost" title="Export patient data (JSON)" onClick={handleExport}>
+                <Download size={16} /> Export
+              </button>
+              <button className="btn btn-ghost" style={{ color: 'var(--clr-error, #f87171)' }} title="Anonymise patient (GDPR/DPA erasure)" onClick={handleAnonymise} disabled={anonymising}>
+                <Trash2 size={16} /> Anonymise
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addDays } from 'date-fns';
-import { appointmentApi, staffApi } from '../api/client';
-import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { appointmentApi, staffApi, shiftApi } from '../api/client';
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Ban } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Calendar.css';
 
@@ -50,6 +50,12 @@ export default function DoctorCalendar() {
       const results = await Promise.all(promises);
       return results.flat();
     },
+    enabled: !!selectedDoctorId,
+  });
+
+  const { data: availableDates = [] } = useQuery({
+    queryKey: ['available-dates', selectedDoctorId],
+    queryFn: () => shiftApi.availableDates(selectedDoctorId).then(r => r.data.available_dates),
     enabled: !!selectedDoctorId,
   });
 
@@ -150,13 +156,21 @@ export default function DoctorCalendar() {
 
             {/* Day columns */}
             {weekDays.map(day => {
-              const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+              const dateStr = format(day, 'yyyy-MM-dd');
+              const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
               const isPast  = day < new Date(new Date().toDateString());
+              const isAvailable = availableDates.includes(dateStr);
+              
               return (
-                <div key={day.toISOString()} className={`calendar-col ${isToday ? 'is-today' : ''}`}>
-                  <div className="calendar-cell header-cell">
+                <div key={day.toISOString()} className={`calendar-col ${isToday ? 'is-today' : ''} ${!isAvailable ? 'is-unavailable' : ''}`}>
+                  <div className="calendar-cell header-cell" style={{ position: 'relative' }}>
                     <div className="day-name">{format(day, 'EEE')}</div>
                     <div className={`day-number ${isToday ? 'active' : ''}`}>{format(day, 'd')}</div>
+                    {!isAvailable && !isPast && (
+                      <div style={{ position: 'absolute', bottom: 4, right: 4, color: 'var(--clr-text-muted)' }} title="No shift scheduled">
+                        <Ban size={12} />
+                      </div>
+                    )}
                   </div>
 
                   {HOURS.map(hour => {
@@ -167,19 +181,21 @@ export default function DoctorCalendar() {
                       const colors = appt ? STATUS_COLOR[appt.status] || STATUS_COLOR.booked : null;
                       const isClickable = appt
                         ? ['checked_in', 'with_nurse', 'with_doctor'].includes(appt.status)
-                        : (isReceptionist || isAdmin) && !isPast;
+                        : (isReceptionist || isAdmin) && !isPast && isAvailable;
 
                       return (
                         <div
-                          className={`slot ${appt ? 'booked' : ''}`}
+                          className={`slot ${appt ? 'booked' : ''} ${!isAvailable && !appt ? 'unavailable-slot' : ''}`}
                           style={appt ? {
                             background: colors.bg,
                             borderLeft: `3px solid ${colors.border}`,
                             cursor: isClickable ? 'pointer' : 'default',
                           } : {
                             cursor: isClickable ? 'pointer' : 'default',
+                            opacity: isAvailable ? 1 : 0.4,
+                            background: isAvailable ? 'transparent' : 'rgba(0,0,0,0.02)'
                           }}
-                          onClick={() => handleSlotClick(day, hour, minute, appt)}
+                          onClick={() => isClickable && handleSlotClick(day, hour, minute, appt)}
                           title={appt ? `${appt.patient_name} — ${STATUS_LABELS[appt.status]}` : (isClickable ? 'Click to book' : '')}
                         >
                           {appt ? (

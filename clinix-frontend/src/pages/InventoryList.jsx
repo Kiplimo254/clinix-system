@@ -10,7 +10,7 @@ export default function InventoryList() {
 
   // Modals / forms
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', unit: '', quantity_on_hand: 0, reorder_level: 10, unit_cost: '' });
+  const [form, setForm] = useState({ name: '', unit: '', quantity_on_hand: 0, reorder_level: 10, unit_cost: '', expiry_date: '' });
   const [restockItem, setRestockItem] = useState(null);
   const [restockQty, setRestockQty] = useState('');
 
@@ -38,9 +38,11 @@ export default function InventoryList() {
     e.preventDefault();
     if (!isAdmin) return;
     try {
-      await inventoryApi.create(form);
+      const payload = { ...form };
+      if (!payload.expiry_date) delete payload.expiry_date;
+      await inventoryApi.create(payload);
       setShowAdd(false);
-      setForm({ name: '', unit: '', quantity_on_hand: 0, reorder_level: 10, unit_cost: '' });
+      setForm({ name: '', unit: '', quantity_on_hand: 0, reorder_level: 10, unit_cost: '', expiry_date: '' });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -79,6 +81,18 @@ export default function InventoryList() {
         </div>
       )}
 
+      {items.filter(i => {
+        if (!i.expiry_date) return false;
+        const exp = new Date(i.expiry_date);
+        const nextMonth = new Date();
+        nextMonth.setDate(new Date().getDate() + 30);
+        return exp <= nextMonth;
+      }).length > 0 && (
+        <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+          <strong>Expiry Alert:</strong> Some items are expired or expiring within 30 days!
+        </div>
+      )}
+
       {showAdd && isAdmin && (
         <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
           <div className="card-header"><span className="card-title">Add New Inventory Item</span></div>
@@ -99,6 +113,10 @@ export default function InventoryList() {
               <label className="form-label">Reorder Level</label>
               <input type="number" className="form-control" value={form.reorder_level} onChange={e => setForm({...form, reorder_level: parseInt(e.target.value)})} required min="0" />
             </div>
+            <div className="form-group">
+              <label className="form-label">Expiry Date (Optional)</label>
+              <input type="date" className="form-control" value={form.expiry_date} onChange={e => setForm({...form, expiry_date: e.target.value})} />
+            </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <button type="submit" className="btn btn-primary">Save Item</button>
             </div>
@@ -118,6 +136,7 @@ export default function InventoryList() {
                   <th>Unit</th>
                   <th>Quantity on Hand</th>
                   <th>Reorder Level</th>
+                  <th>Expiry Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -134,6 +153,15 @@ export default function InventoryList() {
                       </span>
                     </td>
                     <td>{item.reorder_level}</td>
+                    <td>
+                      {item.expiry_date ? (
+                        <span style={{ 
+                          color: new Date(item.expiry_date) <= new Date(new Date().setDate(new Date().getDate() + 30)) ? 'var(--clr-error)' : 'inherit'
+                        }}>
+                          {item.expiry_date}
+                        </span>
+                      ) : '—'}
+                    </td>
                     <td>
                       {(isAdmin || isNurse) && (
                         <button 

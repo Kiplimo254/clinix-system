@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from clinics.models import Clinic
+from .audit_models import AuditLog  # noqa: F401  re-export so migrations pick it up
 
 
 class Staff(models.Model):

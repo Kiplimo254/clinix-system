@@ -134,11 +134,21 @@ export default function ClinicSignup() {
               <label className="form-label">Confirm Password</label>
               <input name="confirm_password" type="password" className="form-control" placeholder="Repeat password" value={form.confirm_password} onChange={handleChange} required />
             </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
+                <input type="checkbox" required style={{ marginTop: '2px' }} />
+                <span>
+                  I agree to the <Link to="/privacy" target="_blank" className="auth-link">Privacy Policy</Link> and consent to data processing.
+                </span>
+              </label>
+            </div>
+            
+            <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+              <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading}>
+                {loading ? <><div className="spinner" /> Creating account…</> : 'Register Clinic'}
+              </button>
+            </div>
           </div>
-
-          <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={loading}>
-            {loading ? <><div className="spinner" /> Creating clinic…</> : 'Create Clinic & Account'}
-          </button>
         </form>
 
         <div className="auth-footer">

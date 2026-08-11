@@ -108,6 +108,9 @@ export default function Login() {
 
         <div className="auth-footer">
           <p>New clinic? <Link to="/signup" className="auth-link">Register your clinic →</Link></p>
+          <p style={{ marginTop: '0.5rem' }}>
+            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.875rem' }}>Forgot password?</Link>
+          </p>
         </div>
       </div>
     </div>

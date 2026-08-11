@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { staffApi, diagnosisAccessApi } from '../api/client';
+import { staffApi, diagnosisAccessApi, authApi } from '../api/client';
 import { format } from 'date-fns';
-import { UserPlus, Mail, Phone, Users, FileLock2, ShieldAlert } from 'lucide-react';
+import { UserPlus, Mail, Phone, Users, FileLock2, ShieldAlert, Activity } from 'lucide-react';
 
 export default function AdminPanel() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'audit'
+  const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'audit' | 'security'
   const [showInviteModal, setShowInviteModal] = useState(false);
   
   const { data: staffList = [], isLoading: loadingStaff } = useQuery({
@@ -14,10 +14,16 @@ export default function AdminPanel() {
     queryFn: () => staffApi.list().then(r => r.data.results || r.data),
   });
 
-  const { data: auditLogs = [], isLoading: loadingAudit } = useQuery({
-    queryKey: ['audit-logs'],
+  const { data: accessLogs = [], isLoading: loadingAccess } = useQuery({
+    queryKey: ['access-logs'],
     queryFn: () => diagnosisAccessApi.list().then(r => r.data.results || r.data),
     enabled: activeTab === 'audit',
+  });
+
+  const { data: auditLogs = [], isLoading: loadingAudit } = useQuery({
+    queryKey: ['audit-logs'],
+    queryFn: () => authApi.auditLogs().then(r => r.data),
+    enabled: activeTab === 'security',
   });
 
   const toggleStaffMutation = useMutation({
@@ -56,12 +62,19 @@ export default function AdminPanel() {
           >
             <Users size={16} style={{ marginRight: 8 }}/> Staff Directory
           </button>
-          <button 
+            <button 
             className={`btn btn-ghost ${activeTab === 'audit' ? 'active-tab' : ''}`}
             style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: activeTab === 'audit' ? '2px solid var(--clr-primary-500)' : '2px solid transparent', padding: '12px 24px' }}
             onClick={() => setActiveTab('audit')}
           >
-            <FileLock2 size={16} style={{ marginRight: 8 }}/> Access Audit Logs
+            <FileLock2 size={16} style={{ marginRight: 8 }}/> Record Access Audit
+          </button>
+          <button 
+            className={`btn btn-ghost ${activeTab === 'security' ? 'active-tab' : ''}`}
+            style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: activeTab === 'security' ? '2px solid var(--clr-primary-500)' : '2px solid transparent', padding: '12px 24px' }}
+            onClick={() => setActiveTab('security')}
+          >
+            <ShieldAlert size={16} style={{ marginRight: 8 }}/> Security Log
           </button>
         </div>
       </div>
@@ -171,7 +184,7 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditLogs.map(log => (
+                  {accessLogs.map(log => (
                     <tr key={log.id}>
                       <td style={{ fontSize: '.85rem', color: 'var(--clr-text-secondary)' }}>
                         {format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}
@@ -223,6 +236,58 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'security' && (
+        <div className="card mt-4">
+          <div className="card-header">
+            <span className="card-title">Security Audit Log</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>Last 200 events</span>
+          </div>
+          {loadingAudit ? (
+            <div className="empty-state"><div className="spinner" /></div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Actor</th>
+                    <th>Target Email</th>
+                    <th>Detail</th>
+                    <th>IP Address</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.length === 0 && (
+                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--clr-text-muted)' }}>No security events recorded yet.</td></tr>
+                  )}
+                  {auditLogs.map(log => {
+                    const isFailure = log.action.includes('failed') || log.action.includes('locked');
+                    const isSuccess = log.action === 'login_success';
+                    return (
+                      <tr key={log.id}>
+                        <td style={{ fontSize: '.8rem', color: 'var(--clr-text-muted)', whiteSpace: 'nowrap' }}>
+                          {format(new Date(log.created_at), 'MMM d HH:mm:ss')}
+                        </td>
+                        <td>
+                          <span className={`badge ${isFailure ? 'badge-no_show' : isSuccess ? 'badge-success' : 'badge-booked'}`}>
+                            {log.action.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '.85rem' }}>{log.actor_name || '—'}</td>
+                        <td style={{ fontSize: '.85rem' }}>{log.target_email}</td>
+                        <td style={{ fontSize: '.8rem', color: 'var(--clr-text-muted)' }}>{log.detail || '—'}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontSize: '.75rem' }}>{log.ip_address || '—'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -21,7 +21,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "clinic", "reminder_sent", "checked_in_at", "created_by", "created_at", "updated_at"]
 
     def validate(self, data):
-        """Prevent double-booking: no two appointments for the same doctor overlap."""
+        """Prevent double-booking and enforce shift-gated booking."""
         doctor = data.get("doctor") or (self.instance and self.instance.doctor)
         scheduled_time = data.get("scheduled_time") or (self.instance and self.instance.scheduled_time)
         duration = data.get("duration_minutes", 30)
@@ -29,13 +29,28 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if not doctor or not scheduled_time:
             return data
 
-        # Walk-ins bypass double-booking validation
+        # Walk-ins bypass double-booking and shift validation
         if data.get("is_walk_in"):
             return data
 
         from datetime import timedelta
         end_time = scheduled_time + timedelta(minutes=duration)
 
+        # ── Shift-gated booking: doctor must have a scheduled shift on that day ──
+        from staffing.models import Shift
+        shift_date = scheduled_time.date()
+        has_shift = Shift.objects.filter(
+            staff=doctor,
+            shift_date=shift_date,
+            status__in=["scheduled", "checked_in"],
+        ).exists()
+        if not has_shift:
+            raise serializers.ValidationError(
+                f"Dr. {doctor.full_name} has no scheduled shift on {shift_date}. "
+                "Please schedule a shift first, or use a walk-in appointment."
+            )
+
+        # ── Double-booking guard ──
         qs = Appointment.objects.filter(
             doctor=doctor,
             status="booked",
