@@ -66,7 +66,7 @@ class LoginView(APIView):
 
         if not user.is_active:
             return Response(
-                {"detail": "This account has been deactivated."},
+                {"detail": "Your account is deactivated. Please visit the admin."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -80,7 +80,7 @@ class LoginView(APIView):
 
         if not staff.is_active:
             return Response(
-                {"detail": "This staff account has been deactivated."},
+                {"detail": "Your account is deactivated. Please visit the admin."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
