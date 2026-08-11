@@ -9,10 +9,7 @@ const api = axios.create({
 
 // ─── Request interceptor: attach access token ─────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  config.withCredentials = true;
   return config;
 });
 
@@ -20,10 +17,10 @@ api.interceptors.request.use((config) => {
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
-    else prom.resolve(token);
+    else prom.resolve();
   });
   failedQueue = [];
 };
@@ -38,8 +35,7 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          .then(() => {
             return api(originalRequest);
           })
           .catch((err) => Promise.reject(err));
@@ -48,24 +44,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh/`, {
-          refresh: refreshToken,
-        });
-        localStorage.setItem('access_token', data.access);
-        api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
-        processQueue(null, data.access);
+        await axios.post(`${BASE_URL}/auth/refresh/`, {}, { withCredentials: true });
+        processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.clear();
+        processQueue(refreshError);
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -151,6 +135,30 @@ export const diagnosisAccessApi = {
 // ─── Dashboard ────────────────────────────────────────────────────────────
 export const dashboardApi = {
   today: () => api.get('/dashboard/today/'),
+};
+
+// ─── Staffing ─────────────────────────────────────────────────────────────
+export const shiftApi = {
+  list: (params) => api.get('/shifts/', { params }),
+  create: (data) => api.post('/shifts/', data),
+  checkIn: (id) => api.post(`/shifts/${id}/check_in/`),
+  checkOut: (id) => api.post(`/shifts/${id}/check_out/`),
+};
+
+export const leaveApi = {
+  list: (params) => api.get('/leave/', { params }),
+  create: (data) => api.post('/leave/', data),
+  approve: (id) => api.post(`/leave/${id}/approve/`),
+};
+
+// ─── Inventory ────────────────────────────────────────────────────────────
+export const inventoryApi = {
+  list: (params) => api.get('/inventory/items/', { params }),
+  create: (data) => api.post('/inventory/items/', data),
+  lowStock: () => api.get('/inventory/items/low_stock/'),
+  restock: (id, quantity) => api.post(`/inventory/items/${id}/restock/`, { quantity }),
+  dispense: (id, quantity, visit_id) => api.post(`/inventory/items/${id}/dispense/`, { quantity, visit_id }),
+  transactions: (params) => api.get('/inventory/transactions/', { params }),
 };
 
 export default api;

@@ -26,90 +26,71 @@ class ClinicScopedMixin:
 
 # ─── Role Permissions ─────────────────────────────────────────────────────────
 
+def _is_active_staff(user):
+    return (
+        user.is_authenticated
+        and user.is_active
+        and hasattr(user, "staff")
+        and user.staff.is_active
+    )
+
+
 class IsAdmin(BasePermission):
     """Only clinic admins."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role == "admin"
-        )
+        return _is_active_staff(request.user) and request.user.staff.role == "admin"
 
 
 class IsDoctor(BasePermission):
     """Only doctors."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role == "doctor"
-        )
+        return _is_active_staff(request.user) and request.user.staff.role == "doctor"
 
 
 class IsNurse(BasePermission):
     """Only nurses."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role == "nurse"
-        )
+        return _is_active_staff(request.user) and request.user.staff.role == "nurse"
 
 
 class IsReceptionist(BasePermission):
     """Only receptionists."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role == "receptionist"
-        )
+        return _is_active_staff(request.user) and request.user.staff.role == "receptionist"
 
 
 class IsDoctorOrNurse(BasePermission):
     """Doctors or nurses."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role in ("doctor", "nurse")
-        )
+        return _is_active_staff(request.user) and request.user.staff.role in ("doctor", "nurse")
 
 
 class IsAdminOrDoctor(BasePermission):
     """Admins or doctors."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role in ("admin", "doctor")
-        )
+        return _is_active_staff(request.user) and request.user.staff.role in ("admin", "doctor")
 
 
-class IsClinicStaff(BasePermission):
-    """Any authenticated clinic staff member (all roles)."""
+class IsActiveStaff(BasePermission):
+    """Authenticated staff whose account is still active."""
+    message = "This staff account has been deactivated."
+
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-        )
+        return _is_active_staff(request.user)
+
+
+class IsClinicStaff(IsActiveStaff):
+    """Any authenticated, active clinic staff member (all roles)."""
+    pass
 
 
 class CanCheckIn(BasePermission):
     """Receptionist or admin can check patients in."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role in ("receptionist", "admin", "nurse")
-        )
+        return _is_active_staff(request.user) and request.user.staff.role in ("receptionist", "admin", "nurse")
 
 
 class CanRecordPayment(BasePermission):
     """Receptionist or admin can record payments."""
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and hasattr(request.user, "staff")
-            and request.user.staff.role in ("receptionist", "admin")
-        )
+        return _is_active_staff(request.user) and request.user.staff.role in ("receptionist", "admin")

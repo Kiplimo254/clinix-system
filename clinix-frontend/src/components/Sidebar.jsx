@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarDays, UserPlus, ClipboardList,
-  Settings, LogOut, Stethoscope, Activity
+  Settings, LogOut, Stethoscope, Activity, FileBox, Clock
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { to: '/appointments',      icon: CalendarDays,    label: 'Appointments',   roles: [] },
   { to: '/calendar',          icon: CalendarDays,    label: 'Calendar',       roles: [] },
   { to: '/visit-records',     icon: ClipboardList,   label: 'Visit Records',  roles: ['doctor', 'nurse', 'admin'] },
+  { to: '/roster',            icon: Clock,           label: 'Staff Roster',   roles: [] },
+  { to: '/inventory',         icon: FileBox,         label: 'Inventory',      roles: [] },
   { to: '/admin',             icon: Settings,        label: 'Admin',          roles: ['admin'] },
 ];
 

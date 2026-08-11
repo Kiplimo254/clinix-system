@@ -29,6 +29,12 @@ urlpatterns = [
 
     # Dashboard
     path("api/dashboard/", include("dashboard.urls")),
+
+    # Staffing
+    path("api/", include("staffing.urls")),
+
+    # Inventory
+    path("api/inventory/", include("inventory.urls")),
 ]
 
 if settings.DEBUG:

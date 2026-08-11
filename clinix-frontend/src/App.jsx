@@ -16,6 +16,8 @@ import DoctorCalendar from './pages/DoctorCalendar';
 import VisitRecords from './pages/VisitRecords';
 import VisitRecordForm from './pages/VisitRecordForm';
 import AdminPanel from './pages/AdminPanel';
+import StaffRoster from './pages/StaffRoster';
+import InventoryList from './pages/InventoryList';
 
 import './index.css';
 
@@ -56,6 +58,8 @@ export default function App() {
               <Route path="appointments"       element={<Appointments />} />
               <Route path="appointments/book"  element={<BookAppointment />} />
               <Route path="calendar"           element={<DoctorCalendar />} />
+              <Route path="roster"             element={<StaffRoster />} />
+              <Route path="inventory"          element={<InventoryList />} />
 
               {/* Doctor / Nurse / Admin only */}
               <Route element={<RoleGuard roles={['doctor','nurse','admin']}><Outlet /></RoleGuard>}>

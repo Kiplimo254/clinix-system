@@ -117,7 +117,14 @@ export default function RegisterPatient() {
             </div>
           </div>
 
-          <div className="form-actions" style={{ marginTop: 'var(--space-2)' }}>
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+              <input type="checkbox" required />
+              <span>I consent to my data being stored and processed for clinical care purposes in accordance with the Data Protection Act. *</span>
+            </label>
+          </div>
+
+          <div className="form-actions" style={{ marginTop: 'var(--space-3)' }}>
             <button type="button" className="btn btn-ghost" onClick={() => navigate('/patients')}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Registering...' : 'Register Patient'}

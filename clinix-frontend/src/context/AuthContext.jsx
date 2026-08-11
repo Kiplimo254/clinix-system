@@ -20,26 +20,18 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      fetchMe();
-    } else {
-      setLoading(false);
-    }
+    // Just try to fetch Me. If we have a valid cookie, it works.
+    fetchMe();
   }, [fetchMe]);
 
   const login = async (email, password) => {
     setError(null);
-    const { data } = await authApi.login({ username: email, password });
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
+    await authApi.login({ username: email, password });
     await fetchMe();
   };
 
   const logout = async () => {
-    const refresh = localStorage.getItem('refresh_token');
-    try { await authApi.logout(refresh); } catch (_) {}
-    localStorage.clear();
+    try { await authApi.logout(); } catch (_) {}
     setUser(null);
   };
 

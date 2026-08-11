@@ -22,6 +22,13 @@ class StaffSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return obj.user.get_full_name()
 
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        if "is_active" in validated_data:
+            instance.user.is_active = validated_data["is_active"]
+            instance.user.save(update_fields=["is_active"])
+        return instance
+
 
 class StaffInviteSerializer(serializers.Serializer):
     """Admin-only: create a new staff member and their User account."""

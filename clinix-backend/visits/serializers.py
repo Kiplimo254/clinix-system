@@ -41,6 +41,17 @@ class VisitRecordSerializer(serializers.ModelSerializer):
                     )
         return data
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and instance.appointment_id:
+            patient_id = instance.appointment.patient_id
+            from .permissions import can_view_diagnosis
+            if not can_view_diagnosis(request, patient_id):
+                data["diagnosis"] = ""
+                data["prescription"] = ""
+        return data
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
