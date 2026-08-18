@@ -50,8 +50,10 @@ class LeaveViewSet(viewsets.ModelViewSet):
     queryset = Leave.objects.all()
 
     def get_queryset(self):
-        user = self.request.user
-        return Leave.objects.filter(staff__clinic=user.staff.clinic)
+        # Leave has no direct clinic FK — filter through staff__clinic
+        return Leave.objects.filter(
+            staff__clinic=self.request.user.staff.clinic
+        ).select_related('staff__user', 'approved_by__user')
 
     def perform_create(self, serializer):
         serializer.save(staff=self.request.user.staff)
@@ -59,6 +61,10 @@ class LeaveViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def approve(self, request, pk=None):
         leave = self.get_object()
+        if leave.approved_by:
+            return Response({'detail': 'Leave already approved.'}, status=status.HTTP_400_BAD_REQUEST)
         leave.approved_by = request.user.staff
+        leave.approved_at = timezone.now()
         leave.save()
         return Response(self.get_serializer(leave).data)
+

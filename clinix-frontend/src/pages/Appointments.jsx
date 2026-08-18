@@ -38,32 +38,32 @@ export default function Appointments() {
 
   return (
     <div className="fade-in">
-      <div className="toolbar">
-        <div>
-          <h1>Appointments</h1>
-          <p style={{ color: 'var(--clr-text-secondary)', marginTop: '4px' }}>
-            Manage bookings and patient arrivals
-          </p>
-        </div>
-        <div className="toolbar-right">
-          <input
-            type="date"
-            className="form-control"
-            value={filterDate}
-            onChange={e => setFilterDate(e.target.value)}
-          />
-          {(isReceptionist || isAdmin) && (
-            <button className="btn btn-secondary" onClick={() => setShowWalkInModal(true)}>
-              <UserPlus size={18} /> Walk-In
+      <div className="page-header">
+        <div className="page-header-row">
+          <div>
+            <h1>Appointments</h1>
+            <p>Manage bookings and patient arrivals</p>
+          </div>
+          <div className="toolbar-right">
+            <input
+              type="date"
+              className="form-control"
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+            />
+            {(isReceptionist || isAdmin) && (
+              <button className="btn btn-secondary" onClick={() => setShowWalkInModal(true)}>
+                <UserPlus size={15} /> Walk-In
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => navigate('/appointments/book')}>
+              <Plus size={15} /> Book
             </button>
-          )}
-          <button className="btn btn-primary" onClick={() => navigate('/appointments/book')}>
-            <Plus size={18} /> Book
-          </button>
+          </div>
         </div>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="panel">
         {isLoading ? (
           <div className="empty-state"><div className="spinner" style={{ color: 'var(--clr-primary-500)' }} /></div>
         ) : appointments.length === 0 ? (
@@ -87,15 +87,15 @@ export default function Appointments() {
               <tbody>
                 {appointments.map(a => (
                   <tr key={a.id}>
-                    <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                    <td className="time-cell">
                       {format(new Date(a.scheduled_time), 'HH:mm')}
                       {a.is_walk_in && (
-                        <span style={{ fontSize: '.7rem', color: 'var(--clr-text-muted)', display: 'block' }}>Walk-In</span>
+                        <span style={{ fontSize: '.7rem', color: 'var(--clr-text-muted)', display: 'block', fontVariantNumeric: 'normal' }}>Walk-In</span>
                       )}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{a.patient_name}</div>
-                      <div style={{ fontSize: '.75rem', color: 'var(--clr-text-muted)' }}>{a.patient_phone}</div>
+                      <div className="cell-primary">{a.patient_name}</div>
+                      <div className="cell-secondary">{a.patient_phone}</div>
                     </td>
                     <td>Dr. {a.doctor_name}</td>
                     <td>

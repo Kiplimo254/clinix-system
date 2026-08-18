@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from .models import Staff
 from .serializers import StaffSerializer, StaffInviteSerializer
 from accounts.permissions import IsAdmin, IsClinicStaff
+from accounts.audit_models import AuditLog
 
 
 class StaffInviteView(APIView):
@@ -22,6 +23,14 @@ class StaffInviteView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         staff = serializer.save()
+
+        AuditLog.objects.create(
+            actor=request.user,
+            action="staff_created",
+            target_email=staff.user.email,
+            detail=f"Role: {staff.role}",
+        )
+
         return Response(
             StaffSerializer(staff).data,
             status=status.HTTP_201_CREATED,
@@ -51,3 +60,41 @@ class StaffDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Staff.objects.filter(
             clinic=self.request.user.staff.clinic
         ).select_related("user")
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        old_active = instance.is_active
+        old_role = instance.role
+
+        response = super().partial_update(request, *args, **kwargs)
+        instance.refresh_from_db()
+
+        # Audit is_active changes
+        if "is_active" in request.data:
+            new_active = instance.is_active
+            if old_active and not new_active:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="staff_deactivated",
+                    target_email=instance.user.email,
+                    detail=f"Deactivated by {request.user.get_full_name()}",
+                )
+            elif not old_active and new_active:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action="staff_reactivated",
+                    target_email=instance.user.email,
+                    detail=f"Reactivated by {request.user.get_full_name()}",
+                )
+
+        # Audit role changes
+        if "role" in request.data and instance.role != old_role:
+            AuditLog.objects.create(
+                actor=request.user,
+                action="staff_role_changed",
+                target_email=instance.user.email,
+                detail=f"Role changed from {old_role} to {instance.role}",
+            )
+
+        return response
+

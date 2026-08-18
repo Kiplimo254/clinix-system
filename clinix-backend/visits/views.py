@@ -18,6 +18,7 @@ from accounts.permissions import (
     IsAdminOrDoctor,
     CanRecordPayment,
 )
+from accounts.audit_models import AuditLog
 
 
 class VisitRecordViewSet(viewsets.ModelViewSet):
@@ -94,7 +95,13 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
-        serializer.save(requested_by=self.request.user.staff)
+        instance = serializer.save(requested_by=self.request.user.staff)
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action="diagnosis_access_requested",
+            target_email=self.request.user.email,
+            detail=f"Patient ID {instance.patient_id} — reason: {instance.reason or 'none'}",
+        )
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsClinicStaff])
     def approve(self, request, pk=None):
@@ -142,6 +149,17 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
             expiry_minutes=serializer.validated_data["expiry_minutes"],
         )
 
+        AuditLog.objects.create(
+            actor=approving_user,
+            action="diagnosis_access_approved",
+            target_email=access_request.requested_by.user.email,
+            detail=(
+                f"Patient ID {access_request.patient_id} — "
+                f"approved by {approving_staff.full_name} for "
+                f"{serializer.validated_data['expiry_minutes']}min"
+            ),
+        )
+
         return Response(
             DiagnosisAccessRequestSerializer(access_request).data,
             status=status.HTTP_200_OK,
@@ -166,7 +184,14 @@ class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):
         access_request.status = "expired"
         access_request.expires_at = timezone.now()
         access_request.save()
-        
+
+        AuditLog.objects.create(
+            actor=request.user,
+            action="diagnosis_access_revoked",
+            target_email=access_request.requested_by.user.email,
+            detail=f"Patient ID {access_request.patient_id} — revoked by admin",
+        )
+
         return Response(
             DiagnosisAccessRequestSerializer(access_request).data,
             status=status.HTTP_200_OK,

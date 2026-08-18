@@ -5,12 +5,15 @@ from rest_framework.views import APIView
 
 from .serializers import ClinicSignupSerializer, ClinicSerializer
 from accounts.permissions import IsAdmin
+from accounts.cookies import set_auth_cookies
+from accounts.serializers import MeSerializer
 
 
 class ClinicSignupView(APIView):
     """
     POST /api/clinics/signup/
     Public endpoint — creates Clinic + owner Staff (admin role) atomically.
+    Sets httpOnly cookies so the user is immediately logged in after signup.
     """
     permission_classes = [AllowAny]
 
@@ -21,18 +24,18 @@ class ClinicSignupView(APIView):
 
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
 
-        return Response(
+        response = Response(
             {
                 "message": f"Clinic '{clinic.name}' created successfully.",
                 "clinic": ClinicSerializer(clinic).data,
-                "tokens": {
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh),
-                },
+                "user": MeSerializer(user.staff).data,
             },
             status=status.HTTP_201_CREATED,
         )
+        set_auth_cookies(response, access, str(refresh))
+        return response
 
 
 class ClinicDetailView(APIView):

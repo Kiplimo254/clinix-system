@@ -17,6 +17,9 @@ class AuditLog(models.Model):
         ("staff_role_changed", "Staff Role Changed"),
         ("password_reset_requested", "Password Reset Requested"),
         ("password_reset_completed", "Password Reset Completed"),
+        ("diagnosis_access_requested", "Diagnosis Access Requested"),
+        ("diagnosis_access_approved", "Diagnosis Access Approved"),
+        ("diagnosis_access_revoked", "Diagnosis Access Revoked"),
     ]
 
     actor = models.ForeignKey(

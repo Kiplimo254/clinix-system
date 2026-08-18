@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { patientApi } from '../api/client';
-import { Search, Plus, UserCircle, Phone, CalendarDays } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 
 export default function Patients() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Debounce search input
   useState(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
@@ -22,28 +21,26 @@ export default function Patients() {
 
   return (
     <div className="fade-in">
-      <div className="toolbar">
-        <div>
-          <h1>Patients</h1>
-          <p style={{ color: 'var(--clr-text-secondary)', marginTop: '4px' }}>
-            Manage patient records and histories
-          </p>
+      <div className="page-header">
+        <div className="page-header-row">
+          <div>
+            <h1>Patients</h1>
+            <p>Search and manage patient records</p>
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/patients/new')}>
+            <Plus size={15} /> Register Patient
+          </button>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate('/patients/new')}
-        >
-          <Plus size={18} /> Register Patient
-        </button>
       </div>
 
-      <div className="card">
-        <div className="toolbar-left" style={{ marginBottom: 'var(--space-5)' }}>
+      <div className="panel">
+        <div className="panel-header">
+          <span className="panel-title">Patient Registry</span>
           <div className="search-bar">
-            <Search size={18} className="search-icon" />
+            <Search size={14} className="search-icon" />
             <input
               type="text"
-              placeholder="Search by name, phone, or ID..."
+              placeholder="Search by name, phone or ID…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -51,62 +48,65 @@ export default function Patients() {
         </div>
 
         {isLoading ? (
-          <div className="empty-state">
-            <div className="spinner" style={{ color: 'var(--clr-primary-500)' }} />
-          </div>
+          <div className="page-loader"><div className="spinner" /><span>Searching…</span></div>
         ) : patients.length === 0 ? (
           <div className="empty-state">
-            <UserCircle size={48} />
             <h3>No patients found</h3>
-            <p>Try adjusting your search or register a new patient.</p>
+            <p>
+              {search
+                ? `No records matching "${search}". Try a different name, phone or ID.`
+                : 'No patients registered yet.'}
+            </p>
+            {!search && (
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => navigate('/patients/new')}>
+                <Plus size={15} /> Register First Patient
+              </button>
+            )}
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Patient ID</th>
-                  <th>Patient Name</th>
-                  <th>Phone</th>
-                  <th>Age / Sex</th>
-                  <th>National ID</th>
-                  <th></th>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Age / Sex</th>
+                <th>National ID</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {patients.map((p) => (
+                <tr
+                  key={p.id}
+                  className="clickable-row"
+                  onClick={() => navigate(`/patients/${p.id}`)}
+                >
+                  <td>
+                    <code className="patient-id">
+                      {p.patient_id || `PAT-${String(p.id).padStart(5, '0')}`}
+                    </code>
+                  </td>
+                  <td className="cell-primary">{p.full_name}</td>
+                  <td>{p.phone}</td>
+                  <td>
+                    {p.age != null ? `${p.age} yrs` : '—'}
+                    {p.gender ? ` · ${p.gender.charAt(0).toUpperCase() + p.gender.slice(1)}` : ''}
+                  </td>
+                  <td>{p.national_id || '—'}</td>
+                  <td className="text-right">
+                    <Link
+                      to={`/patients/${p.id}`}
+                      className="btn btn-ghost btn-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View Profile
+                    </Link>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {patients.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '.8rem', background: 'var(--clr-surface-2)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', color: 'var(--clr-primary-400)', fontWeight: 700, letterSpacing: '.03em' }}>
-                        {p.patient_id || `PAT-${String(p.id).padStart(5,'0')}`}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{p.full_name}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Phone size={14} style={{ color: 'var(--clr-text-muted)' }} />
-                        {p.phone}
-                      </div>
-                    </td>
-                    <td>
-                      {p.age != null ? `${p.age} yrs` : '—'} /{' '}
-                      <span style={{ textTransform: 'capitalize' }}>
-                        {p.gender || '—'}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: 'var(--font-mono)' }}>
-                      {p.national_id || '—'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <Link to={`/patients/${p.id}`} className="btn btn-secondary btn-sm">
-                        View Profile
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

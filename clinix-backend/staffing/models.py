@@ -23,4 +23,17 @@ class Leave(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     reason = models.CharField(max_length=255, blank=True)
-    approved_by = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, related_name="leave_approvals")
+    approved_by = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name="leave_approvals")
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_approved(self):
+        return self.approved_by is not None
+
+    def __str__(self):
+        return f"{self.staff.full_name}: {self.start_date} – {self.end_date}"
+

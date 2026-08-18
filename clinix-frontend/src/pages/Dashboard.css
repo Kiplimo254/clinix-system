@@ -1,63 +1,122 @@
 /* ─── Dashboard ───────────────────────────────────────────────────────────── */
-.dashboard-header {
+
+/* Page header row with action button */
+.page-header-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: var(--space-8);
   gap: var(--space-4);
 }
-.dashboard-header h1 { font-size: 1.75rem; }
-.dashboard-header p  { margin-top: var(--space-1); color: var(--clr-text-secondary); }
 
-.dashboard-badge {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(34,197,94,.12);
-  color: #4ade80;
-  border: 1px solid rgba(34,197,94,.25);
-  border-radius: var(--radius-full);
-  padding: 0.35rem 0.85rem;
-  font-size: 0.8rem; font-weight: 700;
-  flex-shrink: 0;
-  animation: pulse 2s ease-in-out infinite;
+/* Summary strip — compact horizontal figures */
+.summary-strip {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  background: var(--clr-surface-1);
+  overflow: hidden;
+}
+.summary-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-3);
+  border-right: 1px solid var(--clr-border-subtle);
+  gap: 2px;
+}
+.summary-stat:last-child { border-right: none; }
+.summary-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--clr-text-primary);
+}
+.summary-lbl {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  text-align: center;
 }
 
-.dashboard-grid {
+/* Main layout */
+.dashboard-body {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: var(--space-5);
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-4);
+  align-items: start;
 }
 
 @media (max-width: 1100px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-body { grid-template-columns: 1fr; }
 }
 
-/* Appointment list */
-.appt-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.appt-row {
+/* Panel — compact named section */
+.panel {
+  background: var(--clr-surface-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.panel-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--clr-border-subtle);
   background: var(--clr-surface-2);
-  transition: background var(--transition-fast);
+  gap: var(--space-3);
 }
-.appt-row:hover { background: var(--clr-surface-3); }
-.appt-time {
-  font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums;
-  color: var(--clr-primary-400); width: 48px; flex-shrink: 0;
+.panel-title {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  text-transform: uppercase;
+  letter-spacing: .04em;
 }
-.appt-info { flex: 1; }
-.appt-patient { font-weight: 600; font-size: .9rem; }
-.appt-doctor  { font-size: .78rem; color: var(--clr-text-muted); margin-top: 2px; }
+.panel-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  background: var(--clr-surface-3);
+  border: 1px solid var(--clr-border);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+}
 
-/* Breakdown */
-.breakdown-list { display: flex; flex-direction: column; gap: var(--space-2); }
-.breakdown-row {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.breakdown-count { font-weight: 700; font-size: .95rem; color: var(--clr-text-primary); }
+/* Table inside panel — no outer borders since panel provides them */
+.panel .table { border-radius: 0; }
+.panel .table th { font-size: 0.7rem; }
+.panel .table th,
+.panel .table td { padding: 0.5rem 1rem; }
 
-/* Doctors */
-.doctor-list { display: flex; flex-direction: column; gap: var(--space-3); }
-.doctor-row { display: flex; align-items: center; gap: var(--space-3); }
+/* Compact table variant for status breakdown */
+.compact-table th,
+.compact-table td { padding: 0.35rem 0.875rem; font-size: 0.8rem; }
+.compact-table tbody tr:last-child td { border-bottom: none; }
+.count-cell { text-align: right; font-weight: 700; font-size: 0.875rem; }
+
+/* Clickable row */
+.clickable-row { cursor: pointer; }
+
+/* Cell typography */
+.cell-primary   { font-weight: 500; font-size: 0.875rem; color: var(--clr-text-primary); }
+.cell-secondary { font-size: 0.75rem; color: var(--clr-text-muted); margin-top: 1px; }
+.time-cell      { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.875rem; color: var(--clr-primary-600); white-space: nowrap; }
+.text-right     { text-align: right; }
+
+/* Right column */
+.dashboard-aside { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* Doctors on duty list */
+.duty-list { padding: var(--space-2) var(--space-4) var(--space-3); display: flex; flex-direction: column; }
+.duty-row {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--clr-border-subtle);
+}
+.duty-row:last-child { border-bottom: none; }
