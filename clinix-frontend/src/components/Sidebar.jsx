@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarDays, ClipboardList,
   Settings, LogOut, Activity, FileBox, Clock, Stethoscope,
-  UserCog, ChevronRight
+  UserCog, ChevronRight, Receipt
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -31,8 +31,9 @@ const NAV_GROUPS = [
   {
     label: 'Operations',
     items: [
-      { to: '/roster',    icon: UserCog,    label: 'Staff Roster', roles: [] },
-      { to: '/inventory', icon: FileBox,    label: 'Inventory',    roles: [] },
+      { to: '/roster',    icon: UserCog, label: 'Staff Roster', roles: [] },
+      { to: '/inventory', icon: FileBox, label: 'Inventory',    roles: [] },
+      { to: '/billing',   icon: Receipt, label: 'Billing',      roles: ['admin', 'receptionist', 'nurse'] },
     ],
   },
   {

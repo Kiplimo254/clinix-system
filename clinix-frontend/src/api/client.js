@@ -130,6 +130,14 @@ export const paymentApi = {
   list: (params) => api.get('/payments/', { params }),
 };
 
+// ─── Invoices ─────────────────────────────────────────────────────────────
+export const invoiceApi = {
+  list: (params) => api.get('/invoices/', { params }),
+  get: (id) => api.get(`/invoices/${id}/`),
+  update: (id, data) => api.patch(`/invoices/${id}/`, data),
+  addCharge: (data) => api.post('/invoice-items/', data),
+};
+
 // ─── Diagnosis Access ─────────────────────────────────────────────────────
 export const diagnosisAccessApi = {
   request: (data) => api.post('/diagnosis-access-requests/', data),

@@ -4,12 +4,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import VisitRecord, Payment, DiagnosisAccessRequest
+from .models import VisitRecord, Payment, DiagnosisAccessRequest, Invoice, InvoiceItem
 from .serializers import (
     VisitRecordSerializer,
     PaymentSerializer,
     DiagnosisAccessRequestSerializer,
     DiagnosisAccessApproveSerializer,
+    InvoiceSerializer,
+    InvoiceItemSerializer,
 )
 from accounts.permissions import (
     ClinicScopedMixin,
@@ -59,11 +61,11 @@ class VisitRecordViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class PaymentViewSet(viewsets.ModelViewSet):
-    """POST /api/payments/"""
-    queryset = Payment.objects.select_related("visit__appointment__patient", "recorded_by__user")
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated, CanRecordPayment]
+class InvoiceViewSet(viewsets.ModelViewSet):
+    """GET /api/invoices/, POST /api/invoices/"""
+    queryset = Invoice.objects.select_related("visit__appointment__patient").prefetch_related("items", "payments")
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated, IsClinicStaff]
 
     def get_queryset(self):
         qs = self.queryset.filter(
@@ -74,8 +76,38 @@ class PaymentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(visit_id=visit_id)
         return qs
 
+
+class InvoiceItemViewSet(viewsets.ModelViewSet):
+    """GET /api/invoice-items/, POST /api/invoice-items/"""
+    queryset = InvoiceItem.objects.select_related("invoice")
+    serializer_class = InvoiceItemSerializer
+    permission_classes = [IsAuthenticated, IsClinicStaff]
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    """POST /api/payments/"""
+    queryset = Payment.objects.select_related("invoice__visit__appointment__patient", "recorded_by__user")
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated, CanRecordPayment]
+
+    def get_queryset(self):
+        qs = self.queryset.filter(
+            invoice__visit__appointment__clinic=self.request.user.staff.clinic
+        )
+        invoice_id = self.request.query_params.get("invoice")
+        if invoice_id:
+            qs = qs.filter(invoice_id=invoice_id)
+        return qs
+
     def perform_create(self, serializer):
-        serializer.save(recorded_by=self.request.user.staff)
+        payment = serializer.save(recorded_by=self.request.user.staff)
+        # Update invoice status automatically based on payments
+        invoice = payment.invoice
+        if invoice.balance <= 0:
+            invoice.status = "paid"
+        elif invoice.amount_paid > 0:
+            invoice.status = "partially_paid"
+        invoice.save()
 
 
 class DiagnosisAccessRequestViewSet(viewsets.ModelViewSet):

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { paymentApi, visitApi } from '../api/client';
+import { paymentApi, invoiceApi } from '../api/client';
 import { X, CreditCard, Smartphone, Banknote, Shield } from 'lucide-react';
 
 const METHODS = [
@@ -16,10 +16,19 @@ export default function PaymentModal({ visitId, patientName, onClose }) {
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
 
+  // Fetch the invoice for this visit
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['invoices-for-visit', visitId],
+    queryFn: () => invoiceApi.list({ visit: visitId }).then(r => r.data.results || r.data),
+    enabled: !!visitId,
+  });
+  const invoice = invoices[0]; // each visit has exactly one invoice
+
   const mutation = useMutation({
     mutationFn: (data) => paymentApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['payments']);
+      queryClient.invalidateQueries(['invoices']);
       onClose();
     },
     onError: (err) => {
@@ -29,13 +38,15 @@ export default function PaymentModal({ visitId, patientName, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!invoice) return;
     mutation.mutate({
-      visit: visitId,
+      invoice: invoice.id,
       amount,
       method,
       reference,
     });
   };
+
 
   return (
     <div className="modal-overlay">

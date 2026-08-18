@@ -14,6 +14,13 @@ class VisitRecord(models.Model):
         ("emergency", "Emergency"),
     ]
 
+    OUTCOME_CHOICES = [
+        ("pending", "Pending"),
+        ("discharged", "Discharged"),
+        ("admitted", "Admitted"),
+        ("referred", "Referred"),
+    ]
+
     appointment = models.OneToOneField(
         Appointment, on_delete=models.CASCADE, related_name="visit_record"
     )
@@ -30,6 +37,12 @@ class VisitRecord(models.Model):
     prescription = models.TextField(blank=True)        # doctor records
     notes = models.TextField(blank=True)               # general notes
     follow_up_date = models.DateField(null=True, blank=True)
+    
+    # Outcomes
+    outcome = models.CharField(max_length=20, choices=OUTCOME_CHOICES, default="pending")
+    referral_hospital = models.CharField(max_length=255, blank=True)
+    admission_ward = models.CharField(max_length=255, blank=True)
+
     created_by = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -73,8 +86,55 @@ def auto_book_follow_up(sender, instance, created, **kwargs):
         )
 
 
+@receiver(post_save, sender=VisitRecord)
+def auto_create_invoice(sender, instance, created, **kwargs):
+    """Auto-create an unpaid invoice when a visit record is created."""
+    if created:
+        Invoice.objects.create(visit=instance)
+
+
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ("unpaid", "Unpaid"),
+        ("partially_paid", "Partially Paid"),
+        ("paid", "Paid"),
+    ]
+    visit = models.OneToOneField(VisitRecord, on_delete=models.CASCADE, related_name="invoice")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="unpaid")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invoice for {self.visit}"
+
+    @property
+    def total_amount(self):
+        return sum(item.total_price for item in self.items.all())
+
+    @property
+    def amount_paid(self):
+        return sum(payment.amount for payment in self.payments.all())
+
+    @property
+    def balance(self):
+        return self.total_amount - self.amount_paid
+
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
+    description = models.CharField(max_length=255)
+    quantity = models.IntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity}x {self.description} @ {self.unit_price}"
+
+    @property
+    def total_price(self):
+        return self.quantity * self.unit_price
+
+
 class Payment(models.Model):
-    """Payment recorded for a clinic visit."""
+    """Payment recorded against an invoice."""
 
     METHOD_CHOICES = [
         ("cash", "Cash"),
@@ -83,7 +143,7 @@ class Payment(models.Model):
         ("insurance", "Insurance"),
     ]
 
-    visit = models.ForeignKey(VisitRecord, on_delete=models.CASCADE, related_name="payments")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     method = models.CharField(max_length=20, choices=METHOD_CHOICES)
     reference = models.CharField(max_length=100, blank=True)  # M-Pesa transaction ID etc.
@@ -91,7 +151,7 @@ class Payment(models.Model):
     paid_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"KES {self.amount} ({self.method}) — {self.visit}"
+        return f"KES {self.amount} ({self.method}) — {self.invoice}"
 
 
 class DiagnosisAccessRequest(models.Model):

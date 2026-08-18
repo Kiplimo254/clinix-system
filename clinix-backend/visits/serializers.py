@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import VisitRecord, Payment, DiagnosisAccessRequest
+from .models import VisitRecord, Payment, DiagnosisAccessRequest, Invoice, InvoiceItem
 from appointments.serializers import AppointmentListSerializer
 from accounts.serializers import StaffSerializer
 
@@ -24,7 +24,7 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         fields = [
             "id", "appointment", "appointment_detail",
             "triage_priority", "vitals", "triage_notes", "diagnosis", "prescription", "notes",
-            "follow_up_date",
+            "follow_up_date", "outcome", "referral_hospital", "admission_ward",
             "created_by", "created_by_name", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_by", "created_at", "updated_at"]
@@ -53,11 +53,34 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         return data
 
 
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceItem
+        fields = ["id", "invoice", "description", "quantity", "unit_price", "total_price"]
+        read_only_fields = ["id", "total_price"]
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ["id", "visit", "amount", "method", "reference", "recorded_by", "paid_at"]
+        fields = ["id", "invoice", "amount", "method", "reference", "recorded_by", "paid_at"]
         read_only_fields = ["id", "recorded_by", "paid_at"]
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True, read_only=True)
+    payments = PaymentSerializer(many=True, read_only=True)
+    patient_name = serializers.CharField(source="visit.appointment.patient.full_name", read_only=True)
+    patient_id = serializers.IntegerField(source="visit.appointment.patient.id", read_only=True)
+    
+    class Meta:
+        model = Invoice
+        fields = [
+            "id", "visit", "patient_name", "patient_id", "status", 
+            "items", "payments", "total_amount", "amount_paid", "balance", "created_at"
+        ]
+        read_only_fields = ["id", "total_amount", "amount_paid", "balance", "created_at"]
+
 
 
 class DiagnosisAccessRequestSerializer(serializers.ModelSerializer):

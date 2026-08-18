@@ -27,6 +27,10 @@ export default function VisitRecordForm() {
   const [prescription, setPrescription] = useState('');
   const [notes, setNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
+  
+  const [outcome, setOutcome] = useState('pending');
+  const [referralHospital, setReferralHospital] = useState('');
+  const [admissionWard, setAdmissionWard] = useState('');
 
   const [existingRecordId, setExistingRecordId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -55,6 +59,9 @@ export default function VisitRecordForm() {
           setPrescription(record.prescription || '');
           setNotes(record.notes || '');
           setFollowUpDate(record.follow_up_date || '');
+          setOutcome(record.outcome || 'pending');
+          setReferralHospital(record.referral_hospital || '');
+          setAdmissionWard(record.admission_ward || '');
         }
       } catch (e) { /* Not found */ }
     }
@@ -83,6 +90,9 @@ export default function VisitRecordForm() {
         triage_notes: triageNotes,
         notes,
         follow_up_date: followUpDate || null,
+        outcome,
+        referral_hospital: referralHospital,
+        admission_ward: admissionWard,
       };
 
       if (isDoctor) {
@@ -327,6 +337,57 @@ export default function VisitRecordForm() {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Outcome & Disposition (Doctor Only) */}
+          <div className={`card ${!canEditClinical ? 'disabled-section' : ''}`}>
+            <div className="card-header">
+              <span className="card-title">Outcome & Disposition</span>
+              {!canEditClinical && <span className="badge badge-no_show">Doctor Only</span>}
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+              <label className="form-label">Outcome</label>
+              <select 
+                className="form-control" 
+                value={outcome} 
+                onChange={e => setOutcome(e.target.value)}
+                disabled={!canEditClinical}
+              >
+                <option value="pending">Pending</option>
+                <option value="discharged">Discharged</option>
+                <option value="admitted">Admitted</option>
+                <option value="referred">Referred</option>
+              </select>
+            </div>
+
+            {outcome === 'admitted' && (
+              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label">Admission Ward / Room</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Ward 4, Bed 12"
+                  value={admissionWard}
+                  onChange={e => setAdmissionWard(e.target.value)}
+                  disabled={!canEditClinical}
+                />
+              </div>
+            )}
+
+            {outcome === 'referred' && (
+              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label">Referral Hospital</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. General Hospital"
+                  value={referralHospital}
+                  onChange={e => setReferralHospital(e.target.value)}
+                  disabled={!canEditClinical}
+                />
+              </div>
+            )}
           </div>
 
           {/* Dispense Medication — Nurse / Receptionist */}

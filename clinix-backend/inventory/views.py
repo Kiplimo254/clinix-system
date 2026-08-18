@@ -56,6 +56,22 @@ class InventoryItemViewSet(ClinicScopedMixin, viewsets.ModelViewSet):
             visit_id=visit_id,
             recorded_by=request.user.staff
         )
+        
+        # Auto-create invoice item if applicable
+        if visit_id and item.unit_cost:
+            from visits.models import InvoiceItem, VisitRecord
+            try:
+                visit = VisitRecord.objects.get(id=visit_id)
+                if hasattr(visit, 'invoice'):
+                    InvoiceItem.objects.create(
+                        invoice=visit.invoice,
+                        description=f"{item.name} ({quantity} {item.unit})",
+                        quantity=quantity,
+                        unit_price=item.unit_cost
+                    )
+            except VisitRecord.DoesNotExist:
+                pass
+
         return Response(self.get_serializer(item).data)
 
 

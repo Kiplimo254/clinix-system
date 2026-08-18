@@ -21,6 +21,9 @@ import InventoryList from './pages/InventoryList';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Billing from './pages/Billing';
+import PrintReceipt from './pages/PrintReceipt';
+import PrintPrescription from './pages/PrintPrescription';
 
 import './index.css';
 
@@ -54,6 +57,9 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password"  element={<ResetPassword />} />
             <Route path="/privacy"         element={<PrivacyPolicy />} />
+            {/* Print views — no sidebar, opened in new tab */}
+            <Route path="/billing/:invoiceId/receipt"      element={<PrintReceipt />} />
+            <Route path="/billing/:visitId/prescription"   element={<PrintPrescription />} />
 
             {/* Protected — any staff */}
             <Route element={<RoleGuard><AppLayout /></RoleGuard>}>
@@ -66,6 +72,7 @@ export default function App() {
               <Route path="calendar"           element={<DoctorCalendar />} />
               <Route path="roster"             element={<StaffRoster />} />
               <Route path="inventory"          element={<InventoryList />} />
+              <Route path="billing"            element={<Billing />} />
 
               {/* Doctor / Nurse / Admin only */}
               <Route element={<RoleGuard roles={['doctor','nurse','admin']}><Outlet /></RoleGuard>}>
